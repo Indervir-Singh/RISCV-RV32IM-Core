@@ -4,7 +4,7 @@ module TOP_TB(
 
   localparam CLKS_PER_BIT = 5;
 
-  logic clk, srst, reg_select, serial_data;
+  logic clk, srst, reg_select, serial_data, uart_over, locked;
   logic [3:0] leds;
   logic [6:0] seg_en;
   logic [7:0] dig_en;
@@ -14,6 +14,8 @@ module TOP_TB(
         .srst(srst),
         .reg_select(reg_select),
         .serial_data(serial_data),
+        .uart_over(uart_over),
+        .locked(locked),
         .dig_en(dig_en),
         .seg_en(seg_en),
         .leds(leds)
@@ -30,7 +32,7 @@ module TOP_TB(
   task WAIT;
     input [7:0] clks;
     begin
-      repeat(clks) @(posedge clk);
+      repeat(clks) @(posedge dut.clk_50Mhz);
     end
   endtask
 
@@ -38,7 +40,7 @@ module TOP_TB(
   begin
     clk = 0;
     forever
-      #5
+      #4
        clk = !clk;
   end
 
@@ -49,11 +51,13 @@ module TOP_TB(
     srst <= 1;
     serial_data <= 1;
     reg_select <= 0;
-    repeat(2) @(posedge clk);
+    uart_over <= 0;
+    @(posedge locked);
+    @(posedge dut.clk_50Mhz);
     srst <= 0;
-    repeat(23)
+    repeat(100)
     begin
-      @(posedge clk);
+      @(posedge dut.clk_50Mhz);
       for(j = 0; j < 4 ; j++)
       begin
         input_byte <= test_instrs[instr_num][j];
@@ -67,9 +71,13 @@ module TOP_TB(
         serial_data <= 1;
         WAIT(CLKS_PER_BIT);
       end
-      instr_num <= instr_num + 1'b1;
+      instr_num = instr_num + 1'b1;
+      if (test_instrs[instr_num][0] === 8'bxxxxxxx)
+        break;
     end
-    repeat(40) @(posedge clk);
+    repeat(2) @(posedge dut.clk_50Mhz);
+    uart_over <= 1;
+    repeat(100) @(posedge dut.clk_50Mhz);
     $finish();
   end
 

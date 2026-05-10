@@ -31,6 +31,8 @@ module core_mc #(parameter WIDTH = 32)
   logic [WIDTH-1:0] SrcB;
   logic [WIDTH-1:0] ALUResult;
   logic [WIDTH-1:0] ALUOut;
+  logic [WIDTH-1:0] MULResult;
+  logic [WIDTH-1:0] MULOut;
 
   logic [WIDTH-8:0] Imm;
 
@@ -44,11 +46,12 @@ module core_mc #(parameter WIDTH = 32)
 
   logic [2:0] ImmSrc;
   logic [2:0] funct3;
+  logic [2:0] ResultSrc;
 
   logic [1:0] ALUSrcASel;
   logic [1:0] ALUSrcBSel;
-  logic [1:0] ResultSrc;
   logic [1:0] AdrSrc;
+  logic [1:0] MULControl;
   logic PCWrite;
   logic IRWrite;
   logic WrDataSrc;
@@ -182,11 +185,32 @@ module core_mc #(parameter WIDTH = 32)
            .reg_out(ALUOut)
          );
 
-  MUX_4 #(.WIDTH(WIDTH)) Result_Mux(
+  MUL_Unit #(.WIDTH(WIDTH)) MUL_Unit(
+             .clk(clk),
+             .srst(srst),
+             .MULControl(MULControl),
+             .SrcA(A),
+             .SrcB(B),
+             .MULResult(MULResult)
+           );
+
+  en_reg #(.WIDTH(WIDTH)) NonArch_MUL_Reg(
+           .clk(clk),
+           .srst(srst),
+           .en(1'b1),
+           .reg_in(MULResult),
+           .reg_out(MULOut)
+         );
+
+  MUX_8 #(.WIDTH(WIDTH)) Result_Mux(
           .A(ALUOut),
           .B(Data),
           .C(ALUResult),
           .D(ImmExt),
+          .E(MULOut),
+          .F(WIDTH'(1'b0)),
+          .G(WIDTH'(1'b0)),
+          .H(WIDTH'(1'b0)),
           .Sel(ResultSrc),
           .Y(Result)
         );
@@ -214,6 +238,7 @@ module core_mc #(parameter WIDTH = 32)
                  .ALUSrcASel(ALUSrcASel),
                  .ALUSrcBSel(ALUSrcBSel),
                  .ALUControl(ALUControl),
+                 .MULControl(MULControl),
                  .ResultSrc(ResultSrc)
                );
 

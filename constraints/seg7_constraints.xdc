@@ -15,7 +15,7 @@ set_property -dict { PACKAGE_PIN Y16    IOSTANDARD LVCMOS33 } [get_ports { seg_e
 set_property -dict { PACKAGE_PIN W10   IOSTANDARD LVCMOS33 } [get_ports { seg_en[6] }]; #IO_L2P_T0_AD8P_35 Sch=rpio_16_r
 
 set_property -dict { PACKAGE_PIN Y17   IOSTANDARD LVCMOS33 } [get_ports { serial_data }]; #IO_L22P_T3_34 Sch=rpio_02_r
-
+set_property -dict { PACKAGE_PIN A20   IOSTANDARD LVCMOS33 } [get_ports { locked }];
 set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports { clk }]; #IO_L13P_T2_MRCC_35 Sch=sysclk\
 
 set_property -dict { PACKAGE_PIN D19   IOSTANDARD LVCMOS33 } [get_ports { srst }]; #IO_L4P_T0_35 Sch=btn[0]

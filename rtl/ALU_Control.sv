@@ -1,15 +1,18 @@
 `timescale 1ns / 1ps
-module ALU_Control
+module ALU_MUL_Control
   (
     input logic funct7_5, funct7_0,
     input logic op_5,
     input logic [1:0] ALUOp,
     input logic [2:0] funct3,
+    output logic [1:0] MULControl,
     output logic [3:0] ALUControl
   );
 
   always_comb
   begin
+    MULControl = 2'b00;
+    ALUControl = 4'b0000;
     case(ALUOp)
       2'b00:  //  Load/Store Word
         ALUControl = 4'b0000;   //  ADD
@@ -28,7 +31,7 @@ module ALU_Control
                 ALUControl = 4'b0001;   // SUB
             end
             else
-              ALUControl = 4'b1010;     // MUL
+              MULControl = 2'b00;       // MUL
           end
           3'b110:
             ALUControl = 4'b0010;       // OR/ORI
@@ -41,7 +44,7 @@ module ALU_Control
             if ({op_5, funct7_0} != 2'b11)
               ALUControl = 4'b0101;     // SLL/SLLI
             else
-              ALUControl = 4'b1011;     // MULH
+              MULControl = 2'b01;       // MULH
           end
           3'b101:
             if ({op_5,funct7_5} != 2'b11)
@@ -51,9 +54,17 @@ module ALU_Control
           3'b010:
             ALUControl = 4'b1000;       // SLT/SLTI
           3'b011:
-            ALUControl = 4'b1001;       // SLTI/SLTIU
+          begin
+            if ({op_5, funct7_0} != 2'b11)
+              ALUControl = 4'b1001;     // SLTI/SLTIU
+            else
+              MULControl = 2'b10;       // MULHU
+          end
           default:
+          begin
             ALUControl = 4'b0000;
+            MULControl = 2'b00;
+          end
         endcase
       end
     endcase

@@ -132,7 +132,7 @@
         "CLKFB_OUT_N_PORT": [ { "value": "clkfb_out_n", "resolve_type": "user", "usage": "all" } ],
         "PLATFORM": [ { "value": "UNKNOWN", "resolve_type": "user", "usage": "all" } ],
         "SUMMARY_STRINGS": [ { "value": "empty", "resolve_type": "user", "usage": "all" } ],
-        "USE_LOCKED": [ { "value": "true", "resolve_type": "user", "format": "bool", "usage": "all" } ],
+        "USE_LOCKED": [ { "value": "true", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "CALC_DONE": [ { "value": "empty", "resolve_type": "user", "usage": "all" } ],
         "USE_RESET": [ { "value": "false", "value_src": "user", "resolve_type": "user", "format": "bool", "usage": "all" } ],
         "USE_POWER_DOWN": [ { "value": "false", "resolve_type": "user", "format": "bool", "usage": "all" } ],
@@ -653,5 +653,5 @@
       }
     }
   },
-  "checksum": "0585caf1"
+  "checksum": "910ddcf5"
 }

@@ -17,7 +17,8 @@ module Control_Unit
     output logic WrDataSrc,
     output logic [1:0] AdrSrc,
     output logic [1:0] ALUSrcASel, ALUSrcBSel,
-    output logic [1:0] ResultSrc,
+    output logic [1:0] MULControl,
+    output logic [2:0] ResultSrc,
     output logic [2:0] ImmSrc,
     output logic [3:0] ALUControl
   );
@@ -30,6 +31,7 @@ module Control_Unit
                 .clk(clk),
                 .srst(srst),
                 .uart_over(uart_over),
+                .funct7_0(funct7_0),
                 .opcode(opcode),
                 .PCUpdate(PCUpdate),
                 .WrDataSrc(WrDataSrc),
@@ -44,12 +46,13 @@ module Control_Unit
                 .Branch(Branch)
               );
 
-  ALU_Control ALU_Control_Unit(
+  ALU_MUL_Control ALU_MUL_Control_Unit(
                 .funct7_0(funct7_0),
                 .funct7_5(funct7_5),
                 .op_5(opcode[5]),
                 .ALUOp(ALUOp),
                 .funct3(funct3),
+                .MULControl(MULControl),
                 .ALUControl(ALUControl)
               );
 

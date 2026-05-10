@@ -7,11 +7,8 @@ module ALU #(parameter WIDTH = 32)
     output logic z_flag
   );
 
-  logic [2*WIDTH-1:0] MUL_Result;
-
   always_comb
   begin
-    MUL_Result = 2*WIDTH'(1'b0);
     case(ALUControl)
       4'b0000: // ADD
         ALUResult = SrcA + SrcB;
@@ -33,15 +30,6 @@ module ALU #(parameter WIDTH = 32)
         ALUResult = ($signed(SrcA) < $signed(SrcB)) ? WIDTH'(1'b1) : WIDTH'(1'b0);
       4'b1001: // SLTU
         ALUResult = (SrcA < SrcB) ? WIDTH'(1'b1) : WIDTH'(1'b0);
-      4'b1010,
-      4'b1011: // MUL
-      begin
-        MUL_Result = SrcA * SrcB;
-        if (ALUControl[0])
-          ALUResult = MUL_Result[2*WIDTH-1:WIDTH];
-        else
-          ALUResult = MUL_Result[WIDTH-1:0];
-      end
       default:
         ALUResult = WIDTH'(1'b0);
     endcase

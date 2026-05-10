@@ -13,10 +13,10 @@ module memory #(parameter WIDTH = 32, HEIGHT = 256)
 
   assign Address = A[WIDTH-1:0];
 
-  initial
+  /*initial
   begin
     $readmemh("riscvtestfile1.mem", memory);
-  end
+  end*/
   
   always_ff @(posedge clk)
   begin

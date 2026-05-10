@@ -6,19 +6,17 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
     input logic reg_select,
     input logic serial_data,
     input logic uart_over,
+    output logic locked,
     output logic [3:0] leds,
     output logic [7:0] dig_en,
     output logic [6:0] seg_en
   );
   logic clk_50Mhz;
-  logic locked;
   clk_wiz_0 clk_pll(
               .clk_in1(clk),
               .clk_out1(clk_50Mhz),
               .locked(locked)
             );
-  logic CPU_reset;
-  assign CPU_reset = srst | ~locked;
 
   logic debounced_uart_over;
   debouncer #(.CLK_FREQ(50_000_000), .DEBOUNCE_TIME_MS(20)) uart_over_debouncer(
@@ -35,7 +33,7 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
               .button_in(reg_select),
               .button_out(debounced_reg_select)
             );
-
+  
   logic debounced_reg_select_d;
   logic reg_select_pulse;
   logic debounced_uart_over_d;

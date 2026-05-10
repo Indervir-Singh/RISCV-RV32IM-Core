@@ -4,6 +4,7 @@ module control_fsm
     input logic clk,
     input logic srst,
     input logic uart_over,
+    input logic funct7_0,
     input logic [6:0] opcode,
     output logic PCUpdate,
     output logic MemWrite,
@@ -13,12 +14,13 @@ module control_fsm
     output logic [1:0] AdrSrc,
     output logic [1:0] ALUSrcA, ALUSrcB,
     output logic [1:0] ALUOp,
-    output logic [1:0] ResultSrc,
+    output logic [2:0] ResultSrc,
     output logic Branch
   );
 
-  typedef enum logic [3:0]
-          {S0_UART, S1_FETCH, S2_DECODE, S3_MEMADR, S4_MEMREAD, S5_MEMWB, S6_MEMWRITE, S7_EXECUTER, S8_ALUWB, S9_BRANCH, S10_EXECUTEI, S11_JAL, S12_LUI}
+  typedef enum logic [5:0]
+          {S0_UART, S1_FETCH, S2_DECODE, S3_MEMADR, S4_MEMREAD, S5_MEMWB, S6_MEMWRITE, S7_EXECUTER, 
+          S8_EXECUTEM_1, S9_EXECUTEM_2, S10_EXECUTEM_3, S11_ALUWB, S12_MULWB, S13_BRANCH, S14_EXECUTEI, S15_JAL, S16_LUI}
           statetype;
   statetype state, nextstate;
 
@@ -44,8 +46,8 @@ module control_fsm
         AdrSrc    = 2'b10;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
         if (uart_over)
           nextstate = S1_FETCH;
@@ -63,8 +65,8 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b10;
-        ResultSrc = 2'b10;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b010;
 
         nextstate = S2_DECODE;
       end
@@ -79,23 +81,26 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b01;
         ALUSrcB   = 2'b01;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
         case(opcode)
           7'h03,
           7'h23:
-            nextstate = S3_MEMADR;      // LW/SW
+            nextstate = S3_MEMADR;        // LW/SW
           7'h33:
-            nextstate = S7_EXECUTER;    // R-Type
+            if (!funct7_0)
+              nextstate = S7_EXECUTER;    // R-Type (ALU)
+            else
+              nextstate = S8_EXECUTEM_1;  // R-Type (MUL_Unit)
           7'h63:
-            nextstate = S9_BRANCH;      // B-Type
-          7'h13:
-            nextstate = S10_EXECUTEI;    // I-Type
+            nextstate = S13_BRANCH;       // B-Type
+          7'h13:  
+            nextstate = S14_EXECUTEI;     // I-Type
           7'h6F:
-            nextstate = S11_JAL;        // JAL
+            nextstate = S15_JAL;          // JAL
           7'h37:
-            nextstate = S12_LUI;        // LUI
+            nextstate = S16_LUI;          // LUI
           default:
             nextstate = S1_FETCH;
         endcase
@@ -111,8 +116,8 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b10;
         ALUSrcB   = 2'b01;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
         case(opcode)
           7'h03:
@@ -134,8 +139,8 @@ module control_fsm
         AdrSrc    = 2'b1;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
         nextstate = S5_MEMWB;
       end
@@ -150,8 +155,8 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b01;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b001;
 
         nextstate = S1_FETCH;
       end
@@ -166,8 +171,8 @@ module control_fsm
         AdrSrc    = 2'b1;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
         nextstate = S1_FETCH;
       end
@@ -182,12 +187,60 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b10;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b10;
+        ResultSrc = 3'b000;
 
-        nextstate = S8_ALUWB;
+        nextstate = S11_ALUWB;
       end
-      S8_ALUWB:       // ALU Output written back in reg file
+      S8_EXECUTEM_1:
+      begin
+        PCUpdate  = 1'b0;
+        MemWrite  = 1'b0;
+        IRWrite   = 1'b0;
+        RegWrite  = 1'b0;
+        Branch    = 1'b0;
+        WrDataSrc = 1'b0;
+        AdrSrc    = 2'b0;
+        ALUSrcA   = 2'b00;
+        ALUSrcB   = 2'b00;
+        ALUOp     = 2'b10;
+        ResultSrc = 3'b000;
+
+        nextstate = S9_EXECUTEM_2;
+      end
+      S9_EXECUTEM_2:
+      begin
+        PCUpdate  = 1'b0;
+        MemWrite  = 1'b0;
+        IRWrite   = 1'b0;
+        RegWrite  = 1'b0;
+        Branch    = 1'b0;
+        WrDataSrc = 1'b0;
+        AdrSrc    = 2'b0;
+        ALUSrcA   = 2'b00;
+        ALUSrcB   = 2'b00;
+        ALUOp     = 2'b10;
+        ResultSrc = 3'b00;
+
+        nextstate = S10_EXECUTEM_3;
+      end
+      S10_EXECUTEM_3:
+      begin
+        PCUpdate  = 1'b0;
+        MemWrite  = 1'b0;
+        IRWrite   = 1'b0;
+        RegWrite  = 1'b0;
+        Branch    = 1'b0;
+        WrDataSrc = 1'b0;
+        AdrSrc    = 2'b0;
+        ALUSrcA   = 2'b00;
+        ALUSrcB   = 2'b00;
+        ALUOp     = 2'b10;
+        ResultSrc = 3'b00;
+
+        nextstate = S12_MULWB;
+      end
+      S11_ALUWB:       // ALU Output written back in reg file
       begin
         PCUpdate  = 1'b0;
         MemWrite  = 1'b0;
@@ -198,12 +251,29 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
         nextstate = S1_FETCH;
       end
-      S9_BRANCH:      // Branch condition checked
+      S12_MULWB:       // MUL Unit Output written back in reg file
+      begin
+        PCUpdate  = 1'b0;
+        MemWrite  = 1'b0;
+        IRWrite   = 1'b0;
+        RegWrite  = 1'b1;
+        Branch    = 1'b0;
+        WrDataSrc = 1'b0;
+        AdrSrc    = 2'b0;
+        ALUSrcA   = 2'b00;
+        ALUSrcB   = 2'b00;
+        ALUOp     = 2'b00;
+        ResultSrc = 3'b100;
+
+        nextstate = S1_FETCH;
+      end
+
+      S13_BRANCH:      // Branch condition checked
       begin
         PCUpdate  = 1'b0;
         MemWrite  = 1'b0;
@@ -214,12 +284,12 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b10;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b01;
+        ResultSrc = 3'b000;
 
         nextstate = S1_FETCH;
       end
-      S10_EXECUTEI:    // I-Type instruction as decoded by ALU_Control is performed
+      S14_EXECUTEI:    // I-Type instruction as decoded by ALU_Control is performed
       begin
         PCUpdate  = 1'b0;
         MemWrite  = 1'b0;
@@ -230,12 +300,12 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b10;
         ALUSrcB   = 2'b01;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b10;
+        ResultSrc = 3'b000;
 
-        nextstate = S8_ALUWB;
+        nextstate = S11_ALUWB;
       end
-      S11_JAL:        // Jump target address written to PC, Return Address Calculated by ALU
+      S15_JAL:        // Jump target address written to PC, Return Address Calculated by ALU
       begin
         PCUpdate  = 1'b1;
         MemWrite  = 1'b0;
@@ -246,12 +316,12 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b01;
         ALUSrcB   = 2'b10;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
-        nextstate = S8_ALUWB;
+        nextstate = S11_ALUWB;
       end
-      S12_LUI:        // Immediate loaded into the reg file
+      S16_LUI:        // Immediate loaded into the reg file
       begin
         PCUpdate  = 1'b0;
         MemWrite  = 1'b0;
@@ -262,8 +332,8 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b11;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b011;
 
         nextstate = S1_FETCH;
       end
@@ -278,8 +348,8 @@ module control_fsm
         AdrSrc    = 2'b0;
         ALUSrcA   = 2'b00;
         ALUSrcB   = 2'b00;
-        ResultSrc = 2'b00;
         ALUOp     = 2'b00;
+        ResultSrc = 3'b000;
 
         nextstate = S1_FETCH;
       end

@@ -128,6 +128,8 @@ set obj [get_filesets sources_1]
 set files [list \
  [file normalize "${origin_dir}/rtl/riscvtestfile1.mem" ]\
  [file normalize "${origin_dir}/rtl/ALU.sv" ]\
+ [file normalize "${origin_dir}/rtl/MUL_Unit.sv" ]\
+ [file normalize "${origin_dir}/rtl/MUX_8.sv" ]\
  [file normalize "${origin_dir}/rtl/ALU_Control.sv" ]\
  [file normalize "${origin_dir}/rtl/Branch_Unit.sv" ]\
  [file normalize "${origin_dir}/rtl/Control_Unit.sv" ]\
@@ -159,6 +161,14 @@ set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "Memory File" -objects $file_obj
 
 set file "rtl/ALU.sv"
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "rtl/MUL_Unit.sv"
+set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
+set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
+
+set file "rtl/MUX_8.sv"
 set file_obj [get_files -of_objects [get_filesets sources_1] [list "*$file"]]
 set_property -name "file_type" -value "SystemVerilog" -objects $file_obj
 

@@ -36,8 +36,6 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
   
   logic debounced_reg_select_d;
   logic reg_select_pulse;
-  logic debounced_uart_over_d;
-  logic uart_over_pulse;
   // Converting Level signal to Pulse Signal
   always_ff @(posedge clk_50Mhz)
   begin
@@ -45,17 +43,11 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
     begin
       debounced_reg_select_d <= 0;
       reg_select_pulse <= 0;
-      
-      debounced_uart_over_d  <= 0;
-      uart_over_pulse  <= 0;
     end
     else
     begin
       reg_select_pulse <= debounced_reg_select & ~debounced_reg_select_d;
       debounced_reg_select_d <= debounced_reg_select;
-
-      uart_over_pulse <= debounced_uart_over & ~debounced_uart_over_d;
-      debounced_uart_over_d  <= debounced_uart_over;
     end
   end
 
@@ -97,7 +89,7 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
   core_mc #(.WIDTH(WIDTH)) CPU(
             .clk(clk_50Mhz),
             .srst(srst),
-            .uart_over(uart_over_pulse),
+            .uart_over(uart_over),
             .uart_MemWrite(uart_MemWrite),
             .uart_mem_adr(uart_mem_adr),
             .uart_instr(uart_instr),

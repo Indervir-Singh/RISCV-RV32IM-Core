@@ -19,9 +19,9 @@ module control_fsm
   );
 
   typedef enum logic [5:0]
-          {S0_UART, S1_FETCH, S2_DECODE, S3_MEMADR, S4_MEMREAD, S5_MEMWB, S6_MEMWRITE, S7_EXECUTER, 
-          S8_EXECUTEM_1, S9_EXECUTEM_2, S10_EXECUTEM_3, S11_ALUWB, S12_MULWB, S13_BRANCH, S14_EXECUTEI, S15_JAL, S16_LUI}
-          statetype;
+          {S0_UART, S1_FETCH, S2_DECODE, S3_MEMADR, S4_MEMREAD, S5_MEMWB, S6_MEMWRITE, S7_EXECUTER,
+           S8_EXECUTEM_1, S9_EXECUTEM_2, S10_EXECUTEM_3, S11_ALUWB, S12_MULWB, S13_BRANCH, S14_EXECUTEI, S15_JAL,
+           S16_LUI} statetype;
   statetype state, nextstate;
 
   always_ff @(posedge clk)
@@ -95,7 +95,7 @@ module control_fsm
               nextstate = S8_EXECUTEM_1;  // R-Type (MUL_Unit)
           7'h63:
             nextstate = S13_BRANCH;       // B-Type
-          7'h13:  
+          7'h13:
             nextstate = S14_EXECUTEI;     // I-Type
           7'h6F:
             nextstate = S15_JAL;          // JAL

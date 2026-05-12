@@ -32,7 +32,6 @@ module core_mc #(parameter WIDTH = 32)
   logic [WIDTH-1:0] ALUResult;
   logic [WIDTH-1:0] ALUOut;
   logic [WIDTH-1:0] MULResult;
-  logic [WIDTH-1:0] MULOut;
 
   logic [WIDTH-8:0] Imm;
 
@@ -194,20 +193,12 @@ module core_mc #(parameter WIDTH = 32)
              .MULResult(MULResult)
            );
 
-  en_reg #(.WIDTH(WIDTH)) NonArch_MUL_Reg(
-           .clk(clk),
-           .srst(srst),
-           .en(1'b1),
-           .reg_in(MULResult),
-           .reg_out(MULOut)
-         );
-
   MUX_8 #(.WIDTH(WIDTH)) Result_Mux(
           .A(ALUOut),
           .B(Data),
           .C(ALUResult),
           .D(ImmExt),
-          .E(MULOut),
+          .E(MULResult),
           .F(WIDTH'(1'b0)),
           .G(WIDTH'(1'b0)),
           .H(WIDTH'(1'b0)),

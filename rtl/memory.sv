@@ -9,20 +9,18 @@ module memory #(parameter WIDTH = 32, HEIGHT = 256)
   );
 
   logic [WIDTH-1:0] memory[HEIGHT-1:0];
-  logic [WIDTH-1:0] Address;
-
-  assign Address = A[WIDTH-1:0];
 
   /*initial
   begin
     $readmemh("riscvtestfile1.mem", memory);
   end*/
-  
+
   always_ff @(posedge clk)
   begin
     if (WE)
-      memory[Address[WIDTH-1:2]] <= WD;
+      memory[A[WIDTH-1:2]] <= WD;
   end
 
-  assign RD = memory[Address[WIDTH-1:2]];
+  assign RD = memory[A[WIDTH-1:2]];
+  
 endmodule

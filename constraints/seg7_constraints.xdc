@@ -16,7 +16,8 @@ set_property -dict { PACKAGE_PIN W10   IOSTANDARD LVCMOS33 } [get_ports { seg_en
 
 set_property -dict { PACKAGE_PIN Y17   IOSTANDARD LVCMOS33 } [get_ports { serial_data }]; #IO_L22P_T3_34 Sch=rpio_02_r
 set_property -dict { PACKAGE_PIN A20   IOSTANDARD LVCMOS33 } [get_ports { locked }];
-set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports { clk }]; #IO_L13P_T2_MRCC_35 Sch=sysclk\
+set_property -dict { PACKAGE_PIN H16   IOSTANDARD LVCMOS33 } [get_ports { clk }]; #IO_L13P_T2_MRCC_35 Sch=sysclk
+create_clock -add -name sys_clk_pin -period 8.00 -waveform {0 4} [get_ports { clk }];
 
 set_property -dict { PACKAGE_PIN D19   IOSTANDARD LVCMOS33 } [get_ports { srst }]; #IO_L4P_T0_35 Sch=btn[0]
 set_property -dict { PACKAGE_PIN D20   IOSTANDARD LVCMOS33 } [get_ports { reg_select }]; #IO_L4N_T0_35 Sch=btn[1]

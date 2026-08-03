@@ -11,7 +11,7 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
     output logic [7:0] dig_en,
     output logic [6:0] seg_en
   );
-  logic clk_50Mhz;
+  /*logic clk_50Mhz;
   clk_wiz_0 clk_pll(
               .clk_in1(clk),
               .clk_out1(clk_50Mhz),
@@ -50,21 +50,21 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
       debounced_reg_select_d <= debounced_reg_select;
     end
   end
-
+*/
   //Register Selection increments once every button press
   logic [$clog2(WIDTH)-1:0] selected_reg;
-  always_ff @(posedge clk_50Mhz)
+  always_ff @(posedge clk)
   begin
     if (srst)
       selected_reg <= 1;
-    else if (reg_select_pulse)
+    else if (reg_select)
       selected_reg <= selected_reg + 1'b1;
   end
 
   logic data_valid;
   logic [7:0] data_byte;
   uart_RX #(.CLKS_PER_BIT(CLKS_PER_BIT)) uart_RX(
-            .clk(clk_50Mhz),
+            .clk(clk),
             .srst(srst),
             .serial_data(serial_data),
             .data_valid(data_valid),
@@ -74,7 +74,7 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
   logic uart_MemWrite;
   logic [WIDTH-1:0] uart_mem_adr, uart_instr;
   write_driver write_driver(
-                 .clk(clk_50Mhz),
+                 .clk(clk),
                  .srst(srst),
                  .data_valid(data_valid),
                  .data_byte(data_byte),
@@ -87,7 +87,7 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
   logic [WIDTH-1:0] RegisterFileOutput;
   logic [WIDTH-1:0] MemReadData, MemWriteData, MemAdr;
   core_mc #(.WIDTH(WIDTH)) CPU(
-            .clk(clk_50Mhz),
+            .clk(clk),
             .srst(srst),
             .uart_over(uart_over),
             .uart_MemWrite(uart_MemWrite),
@@ -102,7 +102,7 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
           );
 
   memory #(.WIDTH(WIDTH), .HEIGHT(256)) Mem(
-           .clk(clk_50Mhz),
+           .clk(clk),
            .WE(MemWrite),
            .A(MemAdr),
            .WD(MemWriteData),
@@ -110,14 +110,14 @@ module TOP #(parameter WIDTH = 32, CLKS_PER_BIT = 434)
          );
 
   Seg7_Display RegisterFile_7SegDisplay(
-                 .clk(clk_50Mhz),
+                 .clk(clk),
                  .srst(srst),
                  .data_in(RegisterFileOutput),
                  .dig_en(dig_en),
                  .seg_en(seg_en)
                );
 
-  always_ff @(posedge clk_50Mhz)
+  always_ff @(posedge clk)
   begin
     if (srst)
       leds <= 4'b0;

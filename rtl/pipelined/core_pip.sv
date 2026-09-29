@@ -32,7 +32,7 @@ module core_pip #(parameter WIDTH = 32)
 
   adder #(.WIDTH(WIDTH)) PcPlus4_Adder(
           .A(PCOut_F),
-          .B(WIDTH'(3'b100)),
+          .B(32'd4),
           .Sum(PCPlus4_F)
         );
 
@@ -55,11 +55,21 @@ module core_pip #(parameter WIDTH = 32)
   logic [WIDTH-1:0] output_reg;
   logic [WIDTH-1:0] ImmExt_D;
   logic [WIDTH-8:0] Imm_D;
+  logic [6:0] op_code;
   logic [4:0] Rs1_D;
   logic [4:0] Rs2_D;
   logic [4:0] Rd_D;
   logic [4:0] selected_reg;
-  logic [2:0] ImmSrc_D;
+  logic [3:0] ALUControl_D;
+  logic [2:0] funct3;
+  logic [1:0] ResultSrc_D;
+  logic [1:0] ImmSrc_D;
+  logic funct7_5;
+  logic Branch_D;
+  logic Jump_D;
+  logic MemWrite_D;
+  logic ALUSrc_D;
+  logic RegWrite_D;
 
   if_id_pip_reg #(.WIDTH(WIDTH)) u_if_id_pip_reg(
                   .clk(clk),
@@ -71,6 +81,21 @@ module core_pip #(parameter WIDTH = 32)
                   .PCOut_D(PCOut_D),
                   .PCPlus4_D(PCPlus4_D)
                 );
+
+  assign{op_code, funct3, funct7_5} = {Instr_D[6:0], Instr_D[14:12], Instr_D[30]};
+  pip_Control_Unit Control_Unit(
+                     .op_code(op_code),
+                     .funct3(funct3),
+                     .funct7_5(funct7_5),
+                     .ALUControl(ALUControl_D),
+                     .ResultSrc(ResultSrc_D),
+                     .ImmSrc(ImmSrc_D),
+                     .Branch(Branch_D),
+                     .Jump(Jump_D),
+                     .MemWrite(MemWrite_D),
+                     .ALUSrc(ALUSrc_D),
+                     .RegWrite(RegWrite_D)
+                   );
 
   assign {Rs2_D,Rs1_D,Rd_D} = {Instr_D[24:15], Instr_D[11:7]};
   reg_file #(.WIDTH(WIDTH)) RegisterFile(
@@ -106,19 +131,38 @@ module core_pip #(parameter WIDTH = 32)
   logic [WIDTH-1:0] ImmExt_E;
   logic [WIDTH-1:0] PCPlus4_E;
   logic [4:0] Rd_E;
-  logic [2:0] ALUControl_E;
+  logic [3:0] ALUControl_E;
+  logic [1:0] ResultSrc_E;
   logic z_flag_E;
-  logic PCSrc_E;
+  logic RegWrite_E;
+  logic MemWrite_E;
+  logic Jump_E;
+  logic Branch_E;
   logic ALUSrc_E;
+  logic PCSrc_E;
   id_ex_pip_reg #(.WIDTH(WIDTH)) u_id_ex_pip_reg(
                   .clk(clk),
                   .srst(srst),
+                  .ALUControl_D(ALUControl_D),
+                  .ResultSrc_D(ResultSrc_D),
+                  .RegWrite_D(RegWrite_D),
+                  .MemWrite_D(MemWrite_D),
+                  .Jump_D(Jump_D),
+                  .Branch_D(Branch_D),
+                  .ALUSrc_D(ALUSrc_D),
                   .RegReadDataA_D(RegReadDataA_D),
                   .RegReadDataB_D(RegReadDataB_D),
                   .PCOut_D(PCOut_D),
                   .ImmExt_D(ImmExt_D),
                   .PCPlus4_D(PCPlus4_D),
                   .Rd_D(Rd_D),
+                  .ALUControl_E(ALUControl_E),
+                  .ResultSrc_E(ResultSrc_E),
+                  .RegWrite_E(RegWrite_E),
+                  .MemWrite_E(MemWrite_E),
+                  .Jump_E(Jump_E),
+                  .Branch_E(Branch_E),
+                  .ALUSrc_E(ALUSrc_E),
                   .RegReadDataA_E(RegReadDataA_E),
                   .RegReadDataB_E(RegReadDataB_E),
                   .PCOut_E(PCOut_E),
@@ -149,22 +193,31 @@ module core_pip #(parameter WIDTH = 32)
         .z_flag(z_flag_E)
       );
 
+  assign PCSrc_E = (Branch_E && z_flag_E) || Jump_E;
   //------------------------
   // MEM Stage
   //------------------------
   logic [WIDTH-1:0] ALUResult_M;
   logic [WIDTH-1:0] WriteData_M;
-  logic [WIDTH-1:0] Rd_M;
   logic [WIDTH-1:0] PCPlus4_M;
   logic [WIDTH-1:0] ReadData_M;
+  logic [4:0] Rd_M;
+  logic [1:0] ResultSrc_M;
+  logic RegWrite_M;
   logic MemWrite_M;
   ex_mem_pip_reg #(.WIDTH(WIDTH)) u_ex_mem_pip_reg(
                    .clk(clk),
                    .srst(srst),
+                   .RegWrite_E(RegWrite_E),
+                   .MemWrite_E(MemWrite_E),
+                   .ResultSrc_E(ResultSrc_E),
                    .ALUResult_E(ALUResult_E),
                    .WriteData_E(RegReadDataB_E),
                    .Rd_E(Rd_E),
                    .PCPlus4_E(PCPlus4_E),
+                   .RegWrite_M(RegWrite_M),
+                   .MemWrite_M(MemWrite_M),
+                   .ResultSrc_M(ResultSrc_M),
                    .ALUResult_M(ALUResult_M),
                    .WriteData_M(WriteData_M),
                    .Rd_M(Rd_M),
@@ -183,18 +236,23 @@ module core_pip #(parameter WIDTH = 32)
   // WB Stage
   //------------------------
   logic [WIDTH-1:0] ReadData_W;
-  logic [WIDTH-1:0] Rd_W;
   logic [WIDTH-1:0] PCPlus4_W;
   logic [WIDTH-1:0] ALUResult_W;
   logic [WIDTH-1:0] Result_W;
-  logic ResultSrc_w;
+  logic [4:0] Rd_W;
+  logic [1:0] ResultSrc_W;
+  logic RegWrite_W;
   mem_wb_pip_reg #(.WIDTH(WIDTH)) u_mem_wb_pip_reg(
                    .clk(clk),
                    .srst(srst),
+                   .RegWrite_M(RegWrite_M),
+                   .ResultSrc_M(ResultSrc_M),
                    .ReadData_M(ReadData_M),
                    .Rd_M(Rd_M),
                    .PCPlus4_M(PCPlus4_M),
                    .ALUResult_M(ALUResult_M),
+                   .RegWrite_W(RegWrite_W),
+                   .ResultSrc_W(ResultSrc_W),
                    .ReadData_W(ReadData_W),
                    .Rd_W(Rd_W),
                    .PCPlus4_W(PCPlus4_W),
@@ -202,11 +260,11 @@ module core_pip #(parameter WIDTH = 32)
                  );
 
   MUX_4 #(.WIDTH(WIDTH)) Result_SelMux(
-    .A(ALUResult_W),
-    .B(ReadData_W),
-    .C(PCPlus4_W),
-    .D(0),
-    .Sel(ResultSrc_W),
-    .Y(Result_W)
-  );
+          .A(ALUResult_W),
+          .B(ReadData_W),
+          .C(PCPlus4_W),
+          .D(0),
+          .Sel(ResultSrc_W),
+          .Y(Result_W)
+        );
 endmodule

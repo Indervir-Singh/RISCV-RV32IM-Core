@@ -2,7 +2,13 @@
 module core_pip #(parameter WIDTH = 32)
   (
     input logic clk,
-    input logic srst
+    input logic srst,
+    input logic Stall_F,
+    input logic Stall_D,
+    input logic Flush_D,
+    input logic Flush_E,
+    input logic [1:0] ForwardA_E,
+    input logic [1:0] ForwardB_E
   );
 
   //------------------------
@@ -25,7 +31,7 @@ module core_pip #(parameter WIDTH = 32)
   en_reg #(.WIDTH(WIDTH)) ProgramCounter(
            .clk(clk),
            .srst(srst),
-           .en(1'b1),
+           .en(Stall_F),
            .reg_in(PCNext_F),
            .reg_out(PCOut_F)
          );
@@ -73,7 +79,8 @@ module core_pip #(parameter WIDTH = 32)
 
   if_id_pip_reg #(.WIDTH(WIDTH)) u_if_id_pip_reg(
                   .clk(clk),
-                  .srst(srst),
+                  .srst(srst || Flush_D),
+                  .en(Stall_D),
                   .Instr_F(Instr_F),
                   .PCOut_F(PCOut_F),
                   .PCPlus4_F(PCPlus4_F),
@@ -142,7 +149,7 @@ module core_pip #(parameter WIDTH = 32)
   logic PCSrc_E;
   id_ex_pip_reg #(.WIDTH(WIDTH)) u_id_ex_pip_reg(
                   .clk(clk),
-                  .srst(srst),
+                  .srst(srst || Flush_E),
                   .ALUControl_D(ALUControl_D),
                   .ResultSrc_D(ResultSrc_D),
                   .RegWrite_D(RegWrite_D),
@@ -177,14 +184,31 @@ module core_pip #(parameter WIDTH = 32)
           .Sum(PCTarget_E)
         );
 
-  MUX_2 #(.WIDTH(WIDTH)) ALU_SrcB_SelMux(
+  MUX_4 #(.WIDTH(WIDTH)) ALUSrcA_ForwardingMux(
+          .A(RegReadDataA_E),
+          .B(Result_W),
+          .C(ALUResult_M),
+          .D(0),
+          .Sel(ForwardA_E),
+          .Y(SrcA_E)
+        );
+
+  MUX_4 #(.WIDTH(WIDTH)) ALURSrcB_ForwardingMux(
           .A(RegReadDataB_E),
+          .B(Result_W),
+          .C(ALUResult_M),
+          .D(0),
+          .Sel(ForwardB_E),
+          .Y(ForwardDataB_E)
+        );
+
+  MUX_2 #(.WIDTH(WIDTH)) ALU_SrcB_SelMux(
+          .A(ForwardDataB_E),
           .B(ImmExt_E),
           .Sel(ALUSrc_E),
           .Y(SrcB_E)
         );
 
-  assign SrcA_E = RegReadDataA_E;
   ALU #(.WIDTH(WIDTH)) u_ALU(
         .ALUControl(ALUControl_E),
         .SrcA(SrcA_E),

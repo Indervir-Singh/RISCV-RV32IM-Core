@@ -12,7 +12,7 @@ module en_reg #(parameter WIDTH = 32)
   begin
     if (srst)
       reg_out <= WIDTH'(1'b0);
-    else if (en)
+    else if (!en)
       reg_out <= reg_in;
   end
 endmodule

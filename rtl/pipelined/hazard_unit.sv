@@ -1,6 +1,5 @@
 `timescale 1ns / 1ps
-module hazard_unit
-  (
+module hazard_unit (
     // Signals for FORWARDING
     input logic RegWrite_M,
     input logic RegWrite_W,
@@ -21,9 +20,9 @@ module hazard_unit
     output logic Flush_E,
 
     //Signals for Flushing Branch mispredictions
-    input logic PCSrc_E,
+    input  logic PCSrc_E,
     output logic Flush_D
-  );
+);
 
   // --------------------------------------------------
   // FORWARDING:
@@ -32,27 +31,22 @@ module hazard_unit
   //   - Priority: MEM > WB : As MEM Stage containes
   //                          more recent instruction
   // --------------------------------------------------
-  
-  always_comb
-  begin
+
+  always_comb begin
     // Forward SrcA
     // Forward from MEM Stage at higher priority
-    if (RegWrite_M && (Rs1_E == Rd_M))
-      ForwardA_E = 2'b10;
+    if (RegWrite_M && (Rs1_E == Rd_M)) ForwardA_E = 2'b10;
     // Forward from WB Stage
-    else if (RegWrite_W && (Rs1_E == Rd_W))
-      ForwardA_E = 2'b01;
+    else if (RegWrite_W && (Rs1_E == Rd_W)) ForwardA_E = 2'b01;
     //No Forwarding
     else
       ForwardA_E = 2'b00;
 
     // Forward SrcB
     // Forward from MEM Stage at higher priority
-    if (RegWrite_M && (Rs2_E == Rd_M))
-      ForwardB_E = 2'b10;
+    if (RegWrite_M && (Rs2_E == Rd_M)) ForwardB_E = 2'b10;
     // Forward from WB Stage
-    else if (RegWrite_W && (Rs2_E == Rd_W))
-      ForwardB_E = 2'b01;
+    else if (RegWrite_W && (Rs2_E == Rd_W)) ForwardB_E = 2'b01;
     //No Forwarding
     else
       ForwardB_E = 2'b00;
@@ -67,16 +61,12 @@ module hazard_unit
   // --------------------------------------------------
 
   logic Flush_E_stall;
-  always_comb
-  begin
-    if (ResultSrc_E_0 && ((Rs1_D == Rd_E) || (Rs2_D == Rd_E)))
-    begin
+  always_comb begin
+    if (ResultSrc_E_0 && ((Rs1_D == Rd_E) || (Rs2_D == Rd_E))) begin
       Stall_D = 1'b1;
       Stall_F = 1'b1;
       Flush_E_stall = 1'b1;
-    end
-    else
-    begin
+    end else begin
       Stall_D = 0;
       Stall_F = 0;
       Flush_E_stall = 0;
@@ -91,20 +81,15 @@ module hazard_unit
   // --------------------------------------------------
 
   logic Flush_E_branch;
-  always_comb
-  begin
-    if (PCSrc_E)
-    begin
+  always_comb begin
+    if (PCSrc_E) begin
       Flush_D = 1'b1;
-      Flush_E = 1'b1;
-    end
-    else
-    begin
+      Flush_E_branch = 1'b1;
+    end else begin
       Flush_D = 0;
-      Flush_E_branch = 0;    
+      Flush_E_branch = 0;
     end
   end
 
   assign Flush_E = Flush_E_stall || Flush_E_branch;
-
 endmodule

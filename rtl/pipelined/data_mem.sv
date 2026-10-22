@@ -8,7 +8,7 @@ module data_mem #(parameter WIDTH = 32, HEIGHT = 256)
     output logic [WIDTH-1:0] data_RD
   );
 
-  logic [WIDTHJ-1:0] data_mem [HEIGHT-1:0];
+  logic [WIDTH-1:0] data_mem [HEIGHT];
 
   always_ff @(posedge clk)
   begin

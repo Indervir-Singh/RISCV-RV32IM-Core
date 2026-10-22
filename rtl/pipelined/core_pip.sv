@@ -9,7 +9,22 @@ module core_pip #(
     input logic Flush_D,
     input logic Flush_E,
     input logic [1:0] ForwardA_E,
-    input logic [1:0] ForwardB_E
+    input logic [1:0] ForwardB_E,
+    output logic RegWrite_M,
+    output logic RegWrite_W,
+    output logic ResultSrc_E_0,
+    output logic PCSrc_E,
+    output logic [4:0] Rs1_D,
+    output logic [4:0] Rs2_D,
+    output logic [4:0] Rs1_E,
+    output logic [4:0] Rs2_E,
+    output logic [4:0] Rd_E,
+    output logic [4:0] Rd_M,
+    output logic [4:0] Rd_W,
+
+    output logic MemWrite_M,
+    output logic [WIDTH-1:0] data_addr_M,
+    output logic [WIDTH-1:0] WriteData_M
 );
 
   //------------------------
@@ -18,9 +33,7 @@ module core_pip #(
   logic [WIDTH-1:0] PCPlus4_F;
   logic [WIDTH-1:0] PCNext_F;
   logic [WIDTH-1:0] PCOut_F;
-  logic [WIDTH-1:0] IMemWriteData_F;
   logic [WIDTH-1:0] Instr_F;
-  logic IMemWrite_F;
 
   MUX_2 #(
       .WIDTH(WIDTH)
@@ -54,9 +67,9 @@ module core_pip #(
       .HEIGHT(256)
   ) Instruction_Mem (
       .clk(clk),
-      .WE (IMemWrite_F),
+      .WE (1'b0),
       .A  (PCOut_F),
-      .WD (IMemWriteData_F),
+      .WD (WIDTH'(1'b0)),
       .RD (Instr_F)
   );
 
@@ -78,8 +91,8 @@ module core_pip #(
   logic [4:0] selected_reg;
   logic [3:0] ALUControl_D;
   logic [2:0] funct3;
+  logic [2:0] ImmSrc_D;
   logic [1:0] ResultSrc_D;
-  logic [1:0] ImmSrc_D;
   logic funct7_5;
   logic Branch_D;
   logic Jump_D;
@@ -153,7 +166,7 @@ module core_pip #(
   logic [WIDTH-1:0] PCOut_E;
   logic [WIDTH-1:0] ImmExt_E;
   logic [WIDTH-1:0] PCPlus4_E;
-  logic [4:0] Rd_E;
+  logic [WIDTH-1:0] ForwardDataB_E;
   logic [3:0] ALUControl_E;
   logic [1:0] ResultSrc_E;
   logic z_flag_E;
@@ -162,7 +175,6 @@ module core_pip #(
   logic Jump_E;
   logic Branch_E;
   logic ALUSrc_E;
-  logic PCSrc_E;
   id_ex_pip_reg #(
       .WIDTH(WIDTH)
   ) u_id_ex_pip_reg (
@@ -175,13 +187,18 @@ module core_pip #(
       .Jump_D(Jump_D),
       .Branch_D(Branch_D),
       .ALUSrc_D(ALUSrc_D),
+      .Rs1_D(Rs1_D),
+      .Rs2_D(Rs2_D),
+      .Rd_D(Rd_D),
       .RegReadDataA_D(RegReadDataA_D),
       .RegReadDataB_D(RegReadDataB_D),
       .PCOut_D(PCOut_D),
       .ImmExt_D(ImmExt_D),
       .PCPlus4_D(PCPlus4_D),
-      .Rd_D(Rd_D),
       .ALUControl_E(ALUControl_E),
+      .Rs1_E(Rs1_E),
+      .Rs2_E(Rs2_E),
+      .Rd_E(Rd_E),
       .ResultSrc_E(ResultSrc_E),
       .RegWrite_E(RegWrite_E),
       .MemWrite_E(MemWrite_E),
@@ -192,10 +209,10 @@ module core_pip #(
       .RegReadDataB_E(RegReadDataB_E),
       .PCOut_E(PCOut_E),
       .ImmExt_E(ImmExt_E),
-      .PCPlus4_E(PCPlus4_E),
-      .Rd_E(Rd_E)
+      .PCPlus4_E(PCPlus4_E)
   );
 
+  assign ResultSrc_E_0 = ResultSrc_E[0];
   adder #(
       .WIDTH(WIDTH)
   ) PcTarget_Adder (
@@ -250,13 +267,9 @@ module core_pip #(
   // MEM Stage
   //------------------------
   logic [WIDTH-1:0] ALUResult_M;
-  logic [WIDTH-1:0] WriteData_M;
   logic [WIDTH-1:0] PCPlus4_M;
   logic [WIDTH-1:0] ReadData_M;
-  logic [4:0] Rd_M;
   logic [1:0] ResultSrc_M;
-  logic RegWrite_M;
-  logic MemWrite_M;
   ex_mem_pip_reg #(
       .WIDTH(WIDTH)
   ) u_ex_mem_pip_reg (
@@ -266,7 +279,7 @@ module core_pip #(
       .MemWrite_E(MemWrite_E),
       .ResultSrc_E(ResultSrc_E),
       .ALUResult_E(ALUResult_E),
-      .WriteData_E(RegReadDataB_E),
+      .WriteData_E(ForwardDataB_E),
       .Rd_E(Rd_E),
       .PCPlus4_E(PCPlus4_E),
       .RegWrite_M(RegWrite_M),
@@ -278,6 +291,7 @@ module core_pip #(
       .PCPlus4_M(PCPlus4_M)
   );
 
+  assign data_addr_M = ALUResult_M;
   data_mem #(
       .WIDTH (WIDTH),
       .HEIGHT(256)
@@ -296,9 +310,7 @@ module core_pip #(
   logic [WIDTH-1:0] PCPlus4_W;
   logic [WIDTH-1:0] ALUResult_W;
   logic [WIDTH-1:0] Result_W;
-  logic [4:0] Rd_W;
   logic [1:0] ResultSrc_W;
-  logic RegWrite_W;
   mem_wb_pip_reg #(
       .WIDTH(WIDTH)
   ) u_mem_wb_pip_reg (

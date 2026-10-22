@@ -5,7 +5,7 @@ module pip_Control_Unit (
     input logic funct7_5,
     output logic [3:0] ALUControl,
     output logic [1:0] ResultSrc,
-    output logic [1:0] ImmSrc,
+    output logic [2:0] ImmSrc,
     output logic Branch,
     output logic Jump,
     output logic MemWrite,

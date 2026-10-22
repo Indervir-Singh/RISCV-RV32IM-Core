@@ -35,18 +35,18 @@ module hazard_unit (
   always_comb begin
     // Forward SrcA
     // Forward from MEM Stage at higher priority
-    if (RegWrite_M && (Rs1_E == Rd_M)) ForwardA_E = 2'b10;
+    if (RegWrite_M && (Rs1_E == Rd_M) && (Rd_M != 0)) ForwardA_E = 2'b10;
     // Forward from WB Stage
-    else if (RegWrite_W && (Rs1_E == Rd_W)) ForwardA_E = 2'b01;
+    else if (RegWrite_W && (Rs1_E == Rd_W) && (Rd_W != 0)) ForwardA_E = 2'b01;
     //No Forwarding
     else
       ForwardA_E = 2'b00;
 
     // Forward SrcB
     // Forward from MEM Stage at higher priority
-    if (RegWrite_M && (Rs2_E == Rd_M)) ForwardB_E = 2'b10;
+    if (RegWrite_M && (Rs2_E == Rd_M) && (Rd_M != 0)) ForwardB_E = 2'b10;
     // Forward from WB Stage
-    else if (RegWrite_W && (Rs2_E == Rd_W)) ForwardB_E = 2'b01;
+    else if (RegWrite_W && (Rs2_E == Rd_W) && (Rd_W != 0)) ForwardB_E = 2'b01;
     //No Forwarding
     else
       ForwardB_E = 2'b00;
@@ -62,7 +62,7 @@ module hazard_unit (
 
   logic Flush_E_stall;
   always_comb begin
-    if (ResultSrc_E_0 && ((Rs1_D == Rd_E) || (Rs2_D == Rd_E))) begin
+    if (ResultSrc_E_0 && ((Rs1_D == Rd_E) || (Rs2_D == Rd_E)) && (Rd_E != 0)) begin
       Stall_D = 1'b1;
       Stall_F = 1'b1;
       Flush_E_stall = 1'b1;

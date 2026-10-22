@@ -15,7 +15,7 @@ module reg_file #(
 );
 
   logic [WIDTH-1:0] Registers[32];
-  always_ff @(posedge clk) begin
+  always_ff @(negedge clk) begin
     if (we && A3 != 5'b0) begin
       Registers[A3] <= wd;
     end

@@ -72,7 +72,7 @@ module TOP_TB(
         WAIT(CLKS_PER_BIT);
       end
       instr_num = instr_num + 1'b1;
-      if (test_instrs[instr_num][0] === 8'bxxxxxxx)
+      if (test_instrs[instr_num][0] === 8'bxxxxxxxx)
         break;
     end
     repeat(2) @(posedge dut.clk_50Mhz);

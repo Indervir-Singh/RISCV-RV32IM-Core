@@ -12,10 +12,10 @@ module memory #(
 
   logic [WIDTH-1:0] memory[HEIGHT];
 
-  /*initial
+  initial
   begin
     $readmemh("riscvtestfile1.mem", memory);
-  end*/
+  end
 
   always_ff @(posedge clk) begin
     if (WE) memory[A[WIDTH-1:2]] <= WD;

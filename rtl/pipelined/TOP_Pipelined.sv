@@ -1,12 +1,17 @@
 `timescale 1ns / 1ps
 module TOP_Pipelined #(
-    parameter WIDTH = 32
+    parameter WIDTH = 32,
+    CLKS_PER_BIT = 434
 ) (
     input logic clk,
     input logic srst,
-    output logic MemWrite_M,
-    output logic [WIDTH-1:0] data_addr_M,
-    output logic [WIDTH-1:0] WriteData_M
+    input logic reg_select,
+    input logic serial_data,
+    input logic load_over,
+    output logic locked,
+    output logic [3:0] leds,
+    output logic [6:0] seg_en,
+    output logic [7:0] dig_en
 );
 
   logic [4:0] Rs1_D;
@@ -26,18 +31,108 @@ module TOP_Pipelined #(
   logic RegWrite_W;
   logic ResultSrc_E_0;
   logic PCSrc_E;
+  logic cpu_srst;
 
+  logic clk_50Mhz;
+  clk_wiz_0 clk_pll (
+      .clk_in1 (clk),
+      .clk_out1(clk_50Mhz),
+      .locked  (locked)
+  );
+  logic debounced_load_over;
+  debouncer #(
+      .CLK_FREQ(50_000_000),
+      .DEBOUNCE_TIME_MS(20)
+  ) load_over_debouncer (
+      .clk(clk_50Mhz),
+      .srst(srst),
+      .button_in(load_over),
+      .button_out(debounced_load_over)
+  );
+  logic debounced_reg_select;
+  debouncer #(
+      .CLK_FREQ(50_000_000),
+      .DEBOUNCE_TIME_MS(20)
+  ) reg_select_debouncer (
+      .clk(clk_50Mhz),
+      .srst(srst),
+      .button_in(reg_select),
+      .button_out(debounced_reg_select)
+  );
+
+  logic debounced_reg_select_d;
+  logic reg_select_pulse;
+  logic debounced_load_over_d;
+  logic load_over_pulse;
+  // Converting Level signal to Pulse Signal
+  always_ff @(posedge clk_50Mhz) begin
+    if (srst) begin
+      debounced_reg_select_d <= 0;
+      reg_select_pulse <= 0;
+
+      debounced_load_over_d <= 0;
+      load_over_pulse <= 0;
+    end else begin
+      reg_select_pulse <= debounced_reg_select & ~debounced_reg_select_d;
+      debounced_reg_select_d <= debounced_reg_select;
+
+      load_over_pulse <= debounced_load_over & ~debounced_load_over_d;
+      debounced_load_over_d <= debounced_load_over;
+    end
+  end
+
+  //Register Selection increments once every button press
+  logic [$clog2(WIDTH)-1:0] selected_reg;
+  always_ff @(posedge clk_50Mhz) begin
+    if (srst) selected_reg <= 1;
+    else if (reg_select_pulse) selected_reg <= selected_reg + 1'b1;
+  end
+  logic data_valid;
+  logic [7:0] data_byte;
+  uart_RX #(
+      .CLKS_PER_BIT(CLKS_PER_BIT)
+  ) uart_RX (
+      .clk(clk_50Mhz),
+      .srst(srst),
+      .serial_data(serial_data),
+      .data_valid(data_valid),
+      .data_byte(data_byte)
+  );
+
+  logic uart_MemWrite;
+  logic [WIDTH-1:0] uart_mem_adr, uart_instr;
+  write_driver write_driver (
+      .clk(clk_50Mhz),
+      .srst(srst),
+      .data_valid(data_valid),
+      .data_byte(data_byte),
+      .uart_MemWrite(uart_MemWrite),
+      .uart_instr(uart_instr),
+      .uart_mem_adr(uart_mem_adr)
+  );
+
+  UART_Load_Unit UART_Load_Unit (
+      .clk(clk_50Mhz),
+      .srst(srst),
+      .load_over(load_over_pulse),
+      .cpu_srst(cpu_srst)
+  );
+  logic [WIDTH-1:0] RegisterFileOutput;
   core_pip #(
       .WIDTH(WIDTH)
   ) core_pip (
-      .clk(clk),
-      .srst(srst),
+      .clk(clk_50Mhz),
+      .srst(srst | cpu_srst),
       .Stall_F(Stall_F),
       .Stall_D(Stall_D),
       .Flush_D(Flush_D),
       .Flush_E(Flush_E),
+      .uart_MemWrite(uart_MemWrite),
       .ForwardA_E(ForwardA_E),
       .ForwardB_E(ForwardB_E),
+      .selected_reg(selected_reg),
+      .uart_mem_adr(uart_mem_adr),
+      .uart_instr(uart_instr),
       .RegWrite_M(RegWrite_M),
       .RegWrite_W(RegWrite_W),
       .ResultSrc_E_0(ResultSrc_E_0),
@@ -49,9 +144,7 @@ module TOP_Pipelined #(
       .Rd_E(Rd_E),
       .Rd_M(Rd_M),
       .Rd_W(Rd_W),
-      .MemWrite_M(MemWrite_M),
-      .data_addr_M(data_addr_M),
-      .WriteData_M(WriteData_M)
+      .output_reg(RegisterFileOutput)
   );
 
   hazard_unit hazard_unit (
@@ -73,4 +166,17 @@ module TOP_Pipelined #(
       .PCSrc_E(PCSrc_E),
       .Flush_D(Flush_D)
   );
+  Seg7_Display RegisterFile_7SegDisplay (
+      .clk(clk_50Mhz),
+      .srst(srst),
+      .data_in(RegisterFileOutput),
+      .dig_en(dig_en),
+      .seg_en(seg_en)
+  );
+
+  always_ff @(posedge clk_50Mhz) begin
+    if (srst) leds <= 4'b0;
+    else leds <= RegisterFileOutput[3:0];
+  end
+
 endmodule

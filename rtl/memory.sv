@@ -12,8 +12,7 @@ module memory #(
 
   logic [WIDTH-1:0] memory[HEIGHT];
 
-  initial
-  begin
+  initial begin
     $readmemh("riscvtestfile1.mem", memory);
   end
 

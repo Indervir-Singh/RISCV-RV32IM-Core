@@ -10,13 +10,15 @@ module ex_mem_pip_reg #(parameter WIDTH = 32)
     input logic [WIDTH-1:0] ALUResult_E,
     input logic [WIDTH-1:0] WriteData_E,
     input logic [WIDTH-1:0] PCPlus4_E,
+    input logic [WIDTH-1:0] ImmExt_E,
     output logic RegWrite_M,
     output logic MemWrite_M,
     output logic [1:0] ResultSrc_M,
     output logic [4:0] Rd_M,
     output logic [WIDTH-1:0] ALUResult_M,
     output logic [WIDTH-1:0] WriteData_M,
-    output logic [WIDTH-1:0] PCPlus4_M
+    output logic [WIDTH-1:0] PCPlus4_M,
+    output logic [WIDTH-1:0] ImmExt_M
   );
 
   always_ff @(posedge clk)
@@ -30,6 +32,7 @@ module ex_mem_pip_reg #(parameter WIDTH = 32)
       WriteData_M <= 0;
       Rd_M <= 0;
       PCPlus4_M <= 0;
+      ImmExt_M <= 0;
     end
     else
     begin
@@ -40,6 +43,7 @@ module ex_mem_pip_reg #(parameter WIDTH = 32)
       WriteData_M <= WriteData_E;
       Rd_M <= Rd_E;
       PCPlus4_M <= PCPlus4_E;
+      ImmExt_M <= ImmExt_E;
     end
   end
 endmodule

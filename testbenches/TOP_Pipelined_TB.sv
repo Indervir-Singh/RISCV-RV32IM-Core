@@ -46,10 +46,10 @@ module TOP_Pipelined_TB ();
   end
   always @(negedge clk) begin
     if (MemWrite_M) begin
-      if (data_addr_M === 100 & WriteData_M === 25) begin
+      if (Data_addr_M === 100 & WriteData_M === 25) begin
         $display("Simulation succeeded");
         $stop;
-      end else if (data_addr_M !== 96) begin
+      end else if (Data_addr_M !== 96) begin
         $display("Simulation failed");
         $stop;
       end

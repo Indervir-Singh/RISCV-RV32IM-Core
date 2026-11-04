@@ -35,5 +35,5 @@ module ALU #(parameter WIDTH = 32)
     endcase
   end
 
-  assign z_flag = (ALUResult == WIDTH'(1'b0));
+  assign z_flag = (SrcA == SrcB);
 endmodule

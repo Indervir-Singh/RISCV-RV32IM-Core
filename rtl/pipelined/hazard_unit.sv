@@ -1,20 +1,17 @@
 `timescale 1ns / 1ps
 module hazard_unit (
     // Signals for FORWARDING
+    input logic RegWrite_E,
     input logic RegWrite_M,
-    input logic RegWrite_W,
-    input logic [4:0] Rs1_E,
-    input logic [4:0] Rs2_E,
-    input logic [4:0] Rd_M,
-    input logic [4:0] Rd_W,
-    output logic [1:0] ForwardA_E,
-    output logic [1:0] ForwardB_E,
-
-    //Signals for STALLING
-    input logic ResultSrc_E_0,
     input logic [4:0] Rs1_D,
     input logic [4:0] Rs2_D,
     input logic [4:0] Rd_E,
+    input logic [4:0] Rd_M,
+    output logic [1:0] ForwardA_D,
+    output logic [1:0] ForwardB_D,
+
+    //Signals for STALLING
+    input logic ResultSrc_E_0,
     output logic Stall_F,
     output logic Stall_D,
     output logic Flush_E,
@@ -26,8 +23,8 @@ module hazard_unit (
 
   // --------------------------------------------------
   // FORWARDING:
-  //   - Rd --> Rs1 when Rs1_E == (Rd_M | Rd_W)
-  //   - Rd --> Rs2 when Rs2_E == (Rd_M | Rd_W)
+  //   - Rd --> Rs1 when Rs1_D == (Rd_E | Rd_M)
+  //   - Rd --> Rs2 when Rs2_D == (Rd_E | Rd_M)
   //   - Priority: MEM > WB : As MEM Stage containes
   //                          more recent instruction
   // --------------------------------------------------
@@ -35,21 +32,21 @@ module hazard_unit (
   always_comb begin
     // Forward SrcA
     // Forward from MEM Stage at higher priority
-    if (RegWrite_M && (Rs1_E == Rd_M) && (Rd_M != 0)) ForwardA_E = 2'b10;
+    if (RegWrite_E && (Rs1_D == Rd_E) && (Rd_E != 0)) ForwardA_D = 2'b10;
     // Forward from WB Stage
-    else if (RegWrite_W && (Rs1_E == Rd_W) && (Rd_W != 0)) ForwardA_E = 2'b01;
+    else if (RegWrite_M && (Rs1_D == Rd_M) && (Rd_M != 0)) ForwardA_D = 2'b01;
     //No Forwarding
     else
-      ForwardA_E = 2'b00;
+      ForwardA_D = 2'b00;
 
     // Forward SrcB
     // Forward from MEM Stage at higher priority
-    if (RegWrite_M && (Rs2_E == Rd_M) && (Rd_M != 0)) ForwardB_E = 2'b10;
+    if (RegWrite_E && (Rs2_D == Rd_E) && (Rd_E != 0)) ForwardB_D = 2'b10;
     // Forward from WB Stage
-    else if (RegWrite_W && (Rs2_E == Rd_W) && (Rd_W != 0)) ForwardB_E = 2'b01;
+    else if (RegWrite_M && (Rs2_D == Rd_M) && (Rd_M != 0)) ForwardB_D = 2'b01;
     //No Forwarding
     else
-      ForwardB_E = 2'b00;
+      ForwardB_D = 2'b00;
   end
 
   // --------------------------------------------------

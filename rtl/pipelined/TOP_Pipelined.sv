@@ -8,7 +8,6 @@ module TOP_Pipelined #(
     input logic reg_select,
     input logic serial_data,
     input logic load_over,
-    output logic locked,
     output logic [3:0] leds,
     output logic [6:0] seg_en,
     output logic [7:0] dig_en
@@ -16,45 +15,36 @@ module TOP_Pipelined #(
 
   logic [4:0] Rs1_D;
   logic [4:0] Rs2_D;
-  logic [4:0] Rs1_E;
-  logic [4:0] Rs2_E;
   logic [4:0] Rd_E;
   logic [4:0] Rd_M;
-  logic [4:0] Rd_W;
-  logic [1:0] ForwardA_E;
-  logic [1:0] ForwardB_E;
+  logic [1:0] ForwardA_D;
+  logic [1:0] ForwardB_D;
   logic Stall_F;
   logic Stall_D;
   logic Flush_D;
   logic Flush_E;
+  logic RegWrite_E;
   logic RegWrite_M;
-  logic RegWrite_W;
   logic ResultSrc_E_0;
   logic PCSrc_E;
   logic cpu_srst;
 
-  logic clk_50Mhz;
-  clk_wiz_0 clk_pll (
-      .clk_in1 (clk),
-      .clk_out1(clk_50Mhz),
-      .locked  (locked)
-  );
   logic debounced_load_over;
   debouncer #(
-      .CLK_FREQ(50_000_000),
+      .CLK_FREQ(125_000_000),
       .DEBOUNCE_TIME_MS(20)
   ) load_over_debouncer (
-      .clk(clk_50Mhz),
+      .clk(clk),
       .srst(srst),
       .button_in(load_over),
       .button_out(debounced_load_over)
   );
   logic debounced_reg_select;
   debouncer #(
-      .CLK_FREQ(50_000_000),
+      .CLK_FREQ(125_000_000),
       .DEBOUNCE_TIME_MS(20)
   ) reg_select_debouncer (
-      .clk(clk_50Mhz),
+      .clk(clk),
       .srst(srst),
       .button_in(reg_select),
       .button_out(debounced_reg_select)
@@ -65,7 +55,7 @@ module TOP_Pipelined #(
   logic debounced_load_over_d;
   logic load_over_pulse;
   // Converting Level signal to Pulse Signal
-  always_ff @(posedge clk_50Mhz) begin
+  always_ff @(posedge clk) begin
     if (srst) begin
       debounced_reg_select_d <= 0;
       reg_select_pulse <= 0;
@@ -83,7 +73,7 @@ module TOP_Pipelined #(
 
   //Register Selection increments once every button press
   logic [$clog2(WIDTH)-1:0] selected_reg;
-  always_ff @(posedge clk_50Mhz) begin
+  always_ff @(posedge clk) begin
     if (srst) selected_reg <= 1;
     else if (reg_select_pulse) selected_reg <= selected_reg + 1'b1;
   end
@@ -92,7 +82,7 @@ module TOP_Pipelined #(
   uart_RX #(
       .CLKS_PER_BIT(CLKS_PER_BIT)
   ) uart_RX (
-      .clk(clk_50Mhz),
+      .clk(clk),
       .srst(srst),
       .serial_data(serial_data),
       .data_valid(data_valid),
@@ -102,7 +92,7 @@ module TOP_Pipelined #(
   logic uart_MemWrite;
   logic [WIDTH-1:0] uart_mem_adr, uart_instr;
   write_driver write_driver (
-      .clk(clk_50Mhz),
+      .clk(clk),
       .srst(srst),
       .data_valid(data_valid),
       .data_byte(data_byte),
@@ -112,7 +102,7 @@ module TOP_Pipelined #(
   );
 
   UART_Load_Unit UART_Load_Unit (
-      .clk(clk_50Mhz),
+      .clk(clk),
       .srst(srst),
       .load_over(load_over_pulse),
       .cpu_srst(cpu_srst)
@@ -121,45 +111,39 @@ module TOP_Pipelined #(
   core_pip #(
       .WIDTH(WIDTH)
   ) core_pip (
-      .clk(clk_50Mhz),
+      .clk(clk),
       .srst(srst | cpu_srst),
       .Stall_F(Stall_F),
       .Stall_D(Stall_D),
       .Flush_D(Flush_D),
       .Flush_E(Flush_E),
       .uart_MemWrite(uart_MemWrite),
-      .ForwardA_E(ForwardA_E),
-      .ForwardB_E(ForwardB_E),
+      .ForwardA_D(ForwardA_D),
+      .ForwardB_D(ForwardB_D),
       .selected_reg(selected_reg),
       .uart_mem_adr(uart_mem_adr),
       .uart_instr(uart_instr),
+      .RegWrite_E(RegWrite_E),
       .RegWrite_M(RegWrite_M),
-      .RegWrite_W(RegWrite_W),
       .ResultSrc_E_0(ResultSrc_E_0),
       .PCSrc_E(PCSrc_E),
       .Rs1_D(Rs1_D),
       .Rs2_D(Rs2_D),
-      .Rs1_E(Rs1_E),
-      .Rs2_E(Rs2_E),
       .Rd_E(Rd_E),
       .Rd_M(Rd_M),
-      .Rd_W(Rd_W),
       .output_reg(RegisterFileOutput)
   );
 
   hazard_unit hazard_unit (
+      .RegWrite_E(RegWrite_E),
       .RegWrite_M(RegWrite_M),
-      .RegWrite_W(RegWrite_W),
-      .Rs1_E(Rs1_E),
-      .Rs2_E(Rs2_E),
-      .Rd_M(Rd_M),
-      .Rd_W(Rd_W),
-      .ForwardA_E(ForwardA_E),
-      .ForwardB_E(ForwardB_E),
-      .ResultSrc_E_0(ResultSrc_E_0),
       .Rs1_D(Rs1_D),
       .Rs2_D(Rs2_D),
       .Rd_E(Rd_E),
+      .Rd_M(Rd_M),
+      .ForwardA_D(ForwardA_D),
+      .ForwardB_D(ForwardB_D),
+      .ResultSrc_E_0(ResultSrc_E_0),
       .Stall_F(Stall_F),
       .Stall_D(Stall_D),
       .Flush_E(Flush_E),
@@ -167,14 +151,14 @@ module TOP_Pipelined #(
       .Flush_D(Flush_D)
   );
   Seg7_Display RegisterFile_7SegDisplay (
-      .clk(clk_50Mhz),
+      .clk(clk),
       .srst(srst),
       .data_in(RegisterFileOutput),
       .dig_en(dig_en),
       .seg_en(seg_en)
   );
 
-  always_ff @(posedge clk_50Mhz) begin
+  always_ff @(posedge clk) begin
     if (srst) leds <= 4'b0;
     else leds <= RegisterFileOutput[3:0];
   end

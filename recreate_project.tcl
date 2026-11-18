@@ -75,7 +75,9 @@
 #*****************************************************************************************
 
 # Check file required for this script exists
-
+proc checkRequiredFiles { origin_dir} {
+  set status true
+  
   set files [list \
  "[file normalize "$origin_dir/rtl/common/riscvtestfile1.mem"]"\
  "[file normalize "$origin_dir/rtl/common/ALU_Control.sv"]"\
